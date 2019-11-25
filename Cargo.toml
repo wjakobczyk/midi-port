@@ -1,9 +1,32 @@
 [package]
 name = "midi-port"
-version = "0.1.0"
-authors = ["Wojciech Jakobczyk <wja@semihalf.com>"]
+description = "SPI driver for the ST7920 LCD display controller"
+authors = ["Wojciech Jakóbczyk <jakobczyk.woj@gmail.com>"]
+categories = ["embedded", "no-std"]
+documentation = "https://docs.rs/st7920"
+exclude = [".gitignore"]
+keywords = ["no-std", "st7920", "lcd", "embedded", "embedded-hal-driver"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/wjakobczyk/st7920"
+version = "0.2.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+embedded-hal = { version = "0.2.3", features = ["unproven"] }
+
+[dev-dependencies]
+cortex-m = "0.6.0"
+cortex-m-rt = "0.6.10"
+cortex-m-semihosting = "0.3.3"
+panic-halt = "0.2.0"
+panic-semihosting = "0.5.3"
+stm32f4 = { version = "0.8.0", features = ["stm32f407", "rt"] }
+stm32f4xx-hal = { version = "0.5.0", default-features = false, features = ["rt", "stm32f407"] }
+
+[profile.release]
+codegen-units = 1
+debug = true
+lto = true
+
+[features]
