@@ -1,6 +1,6 @@
 target extended-remote :3333
 
-file target/thumbv7em-none-eabihf/debug/examples/basic
+file target/thumbv7em-none-eabihf/debug/examples/irq
 
 # print demangled symbols
 set print asm-demangle on
