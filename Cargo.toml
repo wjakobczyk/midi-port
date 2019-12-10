@@ -1,14 +1,14 @@
 [package]
 name = "midi-port"
-description = "SPI driver for the ST7920 LCD display controller"
+description = "Rust driver library for UART midi port."
 authors = ["Wojciech Jakóbczyk <jakobczyk.woj@gmail.com>"]
 categories = ["embedded", "no-std"]
-documentation = "https://docs.rs/st7920"
+documentation = "https://docs.rs/midi-port"
 exclude = [".gitignore"]
-keywords = ["no-std", "st7920", "lcd", "embedded", "embedded-hal-driver"]
+keywords = ["no-std", "midi", "embedded-hal-driver"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/wjakobczyk/st7920"
+repository = "https://github.com/wjakobczyk/midi-port"
 version = "0.1.0"
 edition = "2018"
 
