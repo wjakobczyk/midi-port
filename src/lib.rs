@@ -1,11 +1,12 @@
 //! # midi-port
 //!
-
+//! This is a Rust driver library for UART midi port. 
+//!
 #![no_std]
 
 use embedded_hal::serial::Read;
 
-use num_derive::FromPrimitive;    
+use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
 pub type ChannelNumber = u8;
@@ -29,7 +30,7 @@ pub enum MidiMessage {
     },
     Aftertouch {
         channel: ChannelNumber,
-        note: Option<NoteNumber>,   //Null for channel aftertouch
+        note: Option<NoteNumber>, //Null for channel aftertouch
         value: u8,
     },
     ControlChange {
@@ -43,7 +44,7 @@ pub enum MidiMessage {
     },
     PitchBendChange {
         channel: ChannelNumber,
-        value: u16,     //14 bits used
+        value: u16, //14 bits used
     },
     Unknown,
 }
@@ -70,7 +71,6 @@ enum Status {
     ActiveSensing = 0xFE,
     SystemReset = 0xFF,
 }
-
 
 pub struct MidiInPort<UART: Read<u8>> {
     uart: UART,
@@ -122,42 +122,36 @@ impl<UART: Read<u8>> MidiInPort<UART> {
         let lo = self.buffer[0] & 0xf;
 
         self.message = match FromPrimitive::from_u8(hi) {
-            Some(Status::NoteOn) => 
-                Some(MidiMessage::NoteOn {
-                    channel: lo,
-                    note: self.buffer[1],
-                    velocity: self.buffer[2],
-                }),
-            Some(Status::NoteOff) => 
-                Some(MidiMessage::NoteOff {
-                    channel: lo,
-                    note: self.buffer[1],
-                    velocity: self.buffer[2],
-                }),
-            Some(Status::PolyphonicAftertouch) => 
-                Some(MidiMessage::Aftertouch {
-                    channel: lo,
-                    note: Some(self.buffer[1]),
-                    value: self.buffer[2],
-                }),
-            Some(Status::ControlChange) => 
-                Some(MidiMessage::ControlChange {
-                    channel: lo,
-                    controller: self.buffer[1],
-                    value: self.buffer[2],
-                }),
-            Some(Status::ChannelAftertouch) => 
-                Some(MidiMessage::Aftertouch {
-                    channel: lo,
-                    note: None,
-                    value: self.buffer[1],
-                }),
-            Some(Status::PitchBend) => 
-                Some(MidiMessage::PitchBendChange {
-                    channel: lo,
-                    value: self.buffer[1] as u16 + (self.buffer[2] as u16) << 7,
-                }),
-        _ => Some(MidiMessage::Unknown),
+            Some(Status::NoteOn) => Some(MidiMessage::NoteOn {
+                channel: lo,
+                note: self.buffer[1],
+                velocity: self.buffer[2],
+            }),
+            Some(Status::NoteOff) => Some(MidiMessage::NoteOff {
+                channel: lo,
+                note: self.buffer[1],
+                velocity: self.buffer[2],
+            }),
+            Some(Status::PolyphonicAftertouch) => Some(MidiMessage::Aftertouch {
+                channel: lo,
+                note: Some(self.buffer[1]),
+                value: self.buffer[2],
+            }),
+            Some(Status::ControlChange) => Some(MidiMessage::ControlChange {
+                channel: lo,
+                controller: self.buffer[1],
+                value: self.buffer[2],
+            }),
+            Some(Status::ChannelAftertouch) => Some(MidiMessage::Aftertouch {
+                channel: lo,
+                note: None,
+                value: self.buffer[1],
+            }),
+            Some(Status::PitchBend) => Some(MidiMessage::PitchBendChange {
+                channel: lo,
+                value: self.buffer[1] as u16 + (self.buffer[2] as u16) << 7,
+            }),
+            _ => Some(MidiMessage::Unknown),
         }
     }
 

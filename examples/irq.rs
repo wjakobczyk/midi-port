@@ -72,6 +72,7 @@ fn UART4() {
         (*MIDI).poll_uart();
 
         if let Some(message) = (*MIDI).get_message() {
+            //the hprintln is taking long time so a lot of messages are lost in the meantime
             hprintln!("{:?}", message).unwrap();
         }
     }

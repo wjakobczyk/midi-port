@@ -49,16 +49,10 @@ fn main() -> ! {
             midi_in.poll_uart();
 
             if let Some(message) = midi_in.get_message() {
+                //the hprintln is taking long time so a lot of messages are lost in the meantime
                 hprintln!("{:?}", message).unwrap();
             }
         }
-
-        // loop {
-        //     match (uart.read()) {
-        //         Ok(byte) => hprintln!("{:x}", byte).unwrap(),
-        //         Err(e) => (),
-        //     };
-        // }
     }
 
     panic!();
