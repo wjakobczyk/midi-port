@@ -149,7 +149,7 @@ impl<UART: Read<u8>> MidiInPort<UART> {
             }),
             Some(Status::PitchBend) => Some(MidiMessage::PitchBendChange {
                 channel: lo,
-                value: self.buffer[1] as u16 + (self.buffer[2] as u16) << 7,
+                value: self.buffer[1] as u16 + ((self.buffer[2] as u16) << 7),
             }),
             _ => Some(MidiMessage::Unknown),
         }
