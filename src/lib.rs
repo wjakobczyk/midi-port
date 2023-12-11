@@ -49,6 +49,11 @@ pub enum MidiMessage {
     Unknown,
 }
 
+#[repr(u8)]
+pub enum Controller {
+    AllNotesOff = 123,
+}
+
 #[derive(FromPrimitive)]
 enum Status {
     NoteOff = 0x80,
