@@ -1,6 +1,6 @@
 //! # midi-port
 //!
-//! This is a Rust driver library for UART midi port. 
+//! This is a Rust driver library for UART midi port.
 //!
 #![no_std]
 
@@ -9,12 +9,15 @@ use embedded_hal::serial::Read;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
+use heapless::Deque;
+
 pub type ChannelNumber = u8;
 pub type NoteNumber = u8;
 pub type ControllerNumber = u8;
 pub type ProgramNumber = u8;
 
 const MAX_MSG_SIZE: usize = 3;
+const MSG_QUEUE_SIZE: usize = 32;
 
 #[derive(Debug)]
 pub enum MidiMessage {
@@ -81,7 +84,7 @@ pub struct MidiInPort<UART: Read<u8>> {
     uart: UART,
     buffer: [u8; MAX_MSG_SIZE],
     in_buffer: usize,
-    message: Option<MidiMessage>,
+    messages: Deque<MidiMessage, MSG_QUEUE_SIZE>,
 }
 
 impl<UART: Read<u8>> MidiInPort<UART> {
@@ -90,12 +93,16 @@ impl<UART: Read<u8>> MidiInPort<UART> {
             uart,
             buffer: [0; MAX_MSG_SIZE],
             in_buffer: 0,
-            message: None,
+            messages: Deque::new(),
         }
     }
 
     pub fn get_message(&mut self) -> Option<MidiMessage> {
-        self.message.take()
+        self.messages.pop_back()
+    }
+
+    fn is_buffer_available(&self) -> bool {
+        self.in_buffer < MAX_MSG_SIZE
     }
 
     fn put_byte(&mut self, byte: u8) {
@@ -126,45 +133,53 @@ impl<UART: Read<u8>> MidiInPort<UART> {
         let hi = self.buffer[0] & 0xf0;
         let lo = self.buffer[0] & 0xf;
 
-        self.message = match FromPrimitive::from_u8(hi) {
-            Some(Status::NoteOn) => Some(MidiMessage::NoteOn {
-                channel: lo,
-                note: self.buffer[1],
-                velocity: self.buffer[2],
-            }),
-            Some(Status::NoteOff) => Some(MidiMessage::NoteOff {
-                channel: lo,
-                note: self.buffer[1],
-                velocity: self.buffer[2],
-            }),
-            Some(Status::PolyphonicAftertouch) => Some(MidiMessage::Aftertouch {
-                channel: lo,
-                note: Some(self.buffer[1]),
-                value: self.buffer[2],
-            }),
-            Some(Status::ControlChange) => Some(MidiMessage::ControlChange {
-                channel: lo,
-                controller: self.buffer[1],
-                value: self.buffer[2],
-            }),
-            Some(Status::ChannelAftertouch) => Some(MidiMessage::Aftertouch {
-                channel: lo,
-                note: None,
-                value: self.buffer[1],
-            }),
-            Some(Status::PitchBend) => Some(MidiMessage::PitchBendChange {
-                channel: lo,
-                value: self.buffer[1] as u16 + ((self.buffer[2] as u16) << 7),
-            }),
-            _ => Some(MidiMessage::Unknown),
-        }
+        assert!(!self.messages.is_full());
+
+        self.messages
+            .push_front(match FromPrimitive::from_u8(hi) {
+                Some(Status::NoteOn) => MidiMessage::NoteOn {
+                    channel: lo,
+                    note: self.buffer[1],
+                    velocity: self.buffer[2],
+                },
+                Some(Status::NoteOff) => MidiMessage::NoteOff {
+                    channel: lo,
+                    note: self.buffer[1],
+                    velocity: self.buffer[2],
+                },
+                Some(Status::PolyphonicAftertouch) => MidiMessage::Aftertouch {
+                    channel: lo,
+                    note: Some(self.buffer[1]),
+                    value: self.buffer[2],
+                },
+                Some(Status::ControlChange) => MidiMessage::ControlChange {
+                    channel: lo,
+                    controller: self.buffer[1],
+                    value: self.buffer[2],
+                },
+                Some(Status::ChannelAftertouch) => MidiMessage::Aftertouch {
+                    channel: lo,
+                    note: None,
+                    value: self.buffer[1],
+                },
+                Some(Status::PitchBend) => MidiMessage::PitchBendChange {
+                    channel: lo,
+                    value: self.buffer[1] as u16 + ((self.buffer[2] as u16) << 7),
+                },
+                _ => MidiMessage::Unknown,
+            })
+            .unwrap();
     }
 
     pub fn poll_uart(&mut self) {
-        let byte = self.uart.read();
+        while self.is_buffer_available() {
+            let byte = self.uart.read();
 
-        if let Ok(byte) = byte {
-            self.put_byte(byte);
+            if let Ok(byte) = byte {
+                self.put_byte(byte);
+            } else {
+                break;
+            }
         }
     }
 }
