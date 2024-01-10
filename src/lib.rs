@@ -49,7 +49,9 @@ pub enum MidiMessage {
         channel: ChannelNumber,
         value: u16, //14 bits used
     },
-    Unknown,
+    Unknown {
+        status: u8,
+    },
 }
 
 #[repr(u8)]
@@ -166,7 +168,9 @@ impl<UART: Read<u8>> MidiInPort<UART> {
                     channel: lo,
                     value: self.buffer[1] as u16 + ((self.buffer[2] as u16) << 7),
                 },
-                _ => MidiMessage::Unknown,
+                _ => MidiMessage::Unknown {
+                    status: self.buffer[0],
+                },
             })
             .unwrap();
     }
