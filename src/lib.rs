@@ -108,6 +108,11 @@ impl<UART: Read<u8>> MidiInPort<UART> {
     }
 
     fn put_byte(&mut self, byte: u8) {
+        if byte < 0x80 && self.in_buffer == 0 && self.is_channel_message() {
+            // apply running status - use previous status value
+            self.in_buffer += 1;
+        }
+
         self.buffer[self.in_buffer] = byte;
         self.in_buffer += 1;
 
@@ -129,6 +134,21 @@ impl<UART: Read<u8>> MidiInPort<UART> {
             Some(Status::PitchBend) => 3,
             _ => 1,
         }
+    }
+
+    fn is_channel_message(&self) -> bool {
+        let hi = self.buffer[0] & 0xf0;
+
+        matches!(
+            FromPrimitive::from_u8(hi),
+            Some(Status::NoteOn)
+                | Some(Status::NoteOff)
+                | Some(Status::PolyphonicAftertouch)
+                | Some(Status::ControlChange)
+                | Some(Status::ProgramChange)
+                | Some(Status::ChannelAftertouch)
+                | Some(Status::PitchBend)
+        )
     }
 
     fn create_message(&mut self) {
